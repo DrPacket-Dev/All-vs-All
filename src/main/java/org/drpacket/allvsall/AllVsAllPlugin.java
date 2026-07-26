@@ -32,6 +32,7 @@ public class AllVsAllPlugin extends JavaPlugin implements Listener, TabCompleter
     private final Map<UUID, Inventory> kitEditorMenus = new HashMap<>();
     private final Map<UUID, Boolean> menuIsEditor = new HashMap<>();
     private final Map<UUID, Integer> borderSize = new HashMap<>();
+    private String selectedKit = "uhc";
     private final Map<UUID, Boolean> borderEnabled = new HashMap<>();
     private final Map<UUID, Integer> borderShrinkTicks = new HashMap<>();
     private final Map<UUID, Integer> borderShrinkAmount = new HashMap<>();
@@ -101,20 +102,22 @@ public class AllVsAllPlugin extends JavaPlugin implements Listener, TabCompleter
     }
 
     private void handleKit(Player player, String[] args) {
-        String kitType = args.length > 0 ? args[0].toLowerCase(Locale.ROOT) : "uhc";
-        activeKitType.put(player.getUniqueId(), kitType);
+        String kitType = args.length > 0 ? args[0].toLowerCase(Locale.ROOT) : selectedKit;
 
         if (hasHostPermission(player)) {
+            if (args.length > 0 && "list".equalsIgnoreCase(kitType)) {
+                openKitSelectionMenu(player);
+                return;
+            }
+            selectedKit = kitType;
             openKitMenu(player, kitType, true);
             return;
         }
 
-        if ("list".equalsIgnoreCase(kitType)) {
-            openKitSelectionMenu(player);
-            return;
+        if (args.length > 0) {
+            sendMessage(player, ChatColor.RED + "Only the host can choose kits. Opening the current kit builder.");
         }
-
-        openKitMenu(player, kitType, false);
+        openKitMenu(player, selectedKit, false);
     }
 
     private void handleBorder(Player player, String[] args) {
@@ -251,17 +254,51 @@ public class AllVsAllPlugin extends JavaPlugin implements Listener, TabCompleter
 
         int slot = event.getRawSlot();
         boolean editorMode = Boolean.TRUE.equals(menuIsEditor.get(player.getUniqueId()));
+        String title = event.getView().getTitle();
         if (slot == 35) {
             if (editorMode) {
                 saveKitLayout(player);
                 sendMessage(player, ChatColor.GREEN + "Kit saved to the configured database.");
             } else {
-                loadSavedKit(player, activeKitType.getOrDefault(player.getUniqueId(), "uhc"));
+                loadSavedKit(player, selectedKit);
                 sendMessage(player, ChatColor.GREEN + "Loaded the saved kit into your inventory.");
             }
             return;
         }
-        if (slot == 10 && inventory.getSize() == 27 && inventory.getItem(10) != null && inventory.getItem(10).getType() == Material.GRASS_BLOCK) {
+        if (title.contains("Choose a Kit")) {
+            if (!hasHostPermission(player)) {
+                sendMessage(player, ChatColor.RED + "Only the host can choose kits.");
+                player.closeInventory();
+                return;
+            }
+            switch (slot) {
+                case 10 -> {
+                    selectedKit = "uhc";
+                    openKitMenu(player, selectedKit, true);
+                    return;
+                }
+                case 12 -> {
+                    selectedKit = "mace";
+                    openKitMenu(player, selectedKit, true);
+                    return;
+                }
+                case 14 -> {
+                    selectedKit = "onlysword";
+                    openKitMenu(player, selectedKit, true);
+                    return;
+                }
+                case 16 -> {
+                    loadSavedKit(player, selectedKit);
+                    sendMessage(player, ChatColor.GREEN + "Loaded the saved kit into your inventory.");
+                    return;
+                }
+                case 26 -> {
+                    player.closeInventory();
+                    return;
+                }
+            }
+        }
+        if (slot == 10 && title.contains("Event Settings")) {
             borderEnabled.put(player.getUniqueId(), !Boolean.TRUE.equals(borderEnabled.get(player.getUniqueId())));
             sendMessage(player, ChatColor.GREEN + "Border " + (borderEnabled.get(player.getUniqueId()) ? "enabled" : "disabled") + ".");
             openSettingsMenu(player);
@@ -291,9 +328,12 @@ public class AllVsAllPlugin extends JavaPlugin implements Listener, TabCompleter
         }
 
         if (slot == 11 || slot == 13 || slot == 15) {
-            if (!editorMode) {
+            if (!editorMode && hasHostPermission(player)) {
                 String selectedKit = clicked.getItemMeta() != null ? ChatColor.stripColor(clicked.getItemMeta().getDisplayName()).toLowerCase(Locale.ROOT) : "uhc";
                 openKitMenu(player, selectedKit, false);
+                return;
+            }
+            if (!editorMode) {
                 return;
             }
         }
