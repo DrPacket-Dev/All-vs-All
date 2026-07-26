@@ -1,0 +1,21 @@
+name: AllVsAll
+main: org.drpacket.allvsall.AllVsAllPlugin
+version: 1.0.0-SNAPSHOT
+api-version: '1.21'
+author: DrPacket
+commands:
+  host:
+    description: Host the All vs All event
+    usage: /host
+  settings:
+    description: Configure the event settings
+    usage: /settings
+  kit:
+    description: Open the kit editor
+    usage: /kit
+  border:
+    description: Set the border size or direction
+    usage: /border <size|add|subtract>
+  b:
+    description: Shortcut for /border
+    usage: /b <size|add|subtract>

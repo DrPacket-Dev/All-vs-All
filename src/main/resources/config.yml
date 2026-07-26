@@ -1,0 +1,11 @@
+database:
+  path: kits.db
+messages:
+  prefix: "[Packet Serv]"
+  welcome: "Welcome to the Packet Community Server."
+  host: "You are now the host of the event."
+  host_help: "Use /settings to configure the match and /kit to build kits."
+  no_host: "You need host rights to use this feature."
+scoreboard:
+  enabled: true
+  title: "Packet Community Server"
