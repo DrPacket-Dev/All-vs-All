@@ -1,5 +1,12 @@
 database:
+  type: sqlite # sqlite, mysql, mariadb
   path: kits.db
+  host: 127.0.0.1
+  port: 3306
+  name: allvsall
+  username: root
+  password: ""
+
 messages:
   prefix: "[Packet Serv]"
   welcome: "Welcome to the Packet Community Server."

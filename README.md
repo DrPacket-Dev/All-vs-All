@@ -37,11 +37,17 @@ Ein Paper-Plugin für All-vs-All-Events mit Host-Rechten, Kit-Editor, SQLite-Spe
 
 ## Konfiguration
 
-Die Datei config.yml wird automatisch erstellt und kann angepasst werden:
+Die Datei config.yml wird automatisch erstellt und kann angepasst werden.
 
 ```yaml
 database:
+  type: sqlite # sqlite, mysql, mariadb
   path: kits.db
+  host: 127.0.0.1
+  port: 3306
+  name: allvsall
+  username: root
+  password: ""
 
 messages:
   prefix: "[Packet Serv]"
@@ -49,11 +55,18 @@ messages:
   host: "You are now the host of the event."
   host_help: "Use /settings to configure the match and /kit to build kits."
   no_host: "You need host rights to use this feature."
-
 scoreboard:
   enabled: true
   title: "Packet Community Server"
 ```
+
+- `database.type`: Wähle aus `sqlite`, `mysql` oder `mariadb`.
+- `database.path`: Pfad zur SQLite-Datei. Wird nur bei SQLite verwendet.
+- `database.host`: Hostname oder IP der MySQL/MariaDB-Datenbank.
+- `database.port`: Port der Datenbank.
+- `database.name`: Name der Datenbank.
+- `database.username`: Benutzername für die Datenbankverbindung.
+- `database.password`: Passwort für die Datenbankverbindung.
 
 ## Entwicklung
 

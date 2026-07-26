@@ -43,15 +43,32 @@ public class AllVsAllPlugin extends JavaPlugin implements Listener, TabCompleter
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        String configuredPath = getConfig().getString("database.path", "kits.db");
-        kitDatabaseFile = new File(configuredPath);
-        if (!kitDatabaseFile.isAbsolute()) {
-            kitDatabaseFile = new File(getDataFolder(), configuredPath);
+        String databaseTypeString = getConfig().getString("database.type", "sqlite").toLowerCase(Locale.ROOT);
+        DatabaseManager.DatabaseType databaseType = switch (databaseTypeString) {
+            case "mysql" -> DatabaseManager.DatabaseType.MYSQL;
+            case "mariadb" -> DatabaseManager.DatabaseType.MARIADB;
+            default -> DatabaseManager.DatabaseType.SQLITE;
+        };
+
+        if (databaseType == DatabaseManager.DatabaseType.SQLITE) {
+            String configuredPath = getConfig().getString("database.path", "kits.db");
+            kitDatabaseFile = new File(configuredPath);
+            if (!kitDatabaseFile.isAbsolute()) {
+                kitDatabaseFile = new File(getDataFolder(), configuredPath);
+            }
+            if (kitDatabaseFile.getParentFile() != null && !kitDatabaseFile.getParentFile().exists() && !kitDatabaseFile.getParentFile().mkdirs()) {
+                getLogger().warning("Could not create kit database directory");
+            }
+            databaseManager = new DatabaseManager(databaseType, kitDatabaseFile.getAbsolutePath(), null, 0, null, null, null);
+        } else {
+            String host = getConfig().getString("database.host", "127.0.0.1");
+            int port = getConfig().getInt("database.port", 3306);
+            String name = getConfig().getString("database.name", "allvsall");
+            String username = getConfig().getString("database.username", "root");
+            String password = getConfig().getString("database.password", "");
+            databaseManager = new DatabaseManager(databaseType, null, host, port, name, username, password);
         }
-        if (kitDatabaseFile.getParentFile() != null && !kitDatabaseFile.getParentFile().exists() && !kitDatabaseFile.getParentFile().mkdirs()) {
-            getLogger().warning("Could not create kit database directory");
-        }
-        databaseManager = new DatabaseManager(kitDatabaseFile);
+
         databaseManager.initialize();
         Bukkit.getPluginManager().registerEvents(this, this);
         getCommand("settings").setTabCompleter(this);

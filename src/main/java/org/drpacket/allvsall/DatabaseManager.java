@@ -8,17 +8,39 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 public class DatabaseManager {
-    private final File databaseFile;
+    public enum DatabaseType {
+        SQLITE,
+        MYSQL,
+        MARIADB
+    }
+
+    private final DatabaseType databaseType;
+    private final String databasePath;
+    private final String host;
+    private final int port;
+    private final String databaseName;
+    private final String username;
+    private final String password;
+
+    public DatabaseManager(DatabaseType databaseType, String databasePath, String host, int port, String databaseName, String username, String password) {
+        this.databaseType = databaseType;
+        this.databasePath = databasePath;
+        this.host = host;
+        this.port = port;
+        this.databaseName = databaseName;
+        this.username = username;
+        this.password = password;
+    }
 
     public DatabaseManager(File databaseFile) {
-        this.databaseFile = databaseFile;
+        this(DatabaseType.SQLITE, databaseFile.getAbsolutePath(), null, 0, null, null, null);
     }
 
     public void initialize() {
         try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
             statement.executeUpdate("""
                 CREATE TABLE IF NOT EXISTS kits (
-                    kit_name TEXT PRIMARY KEY,
+                    kit_name VARCHAR(255) PRIMARY KEY,
                     layout TEXT NOT NULL
                 )
                 """);
@@ -28,8 +50,12 @@ public class DatabaseManager {
     }
 
     public void saveKit(String kitName, String layout) {
-        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO kits(kit_name, layout) VALUES(?, ?) ON CONFLICT(kit_name) DO UPDATE SET layout = excluded.layout")) {
+        String sql = switch (databaseType) {
+            case SQLITE -> "INSERT INTO kits(kit_name, layout) VALUES(?, ?) ON CONFLICT(kit_name) DO UPDATE SET layout = excluded.layout";
+            default -> "INSERT INTO kits(kit_name, layout) VALUES(?, ?) ON DUPLICATE KEY UPDATE layout = VALUES(layout)";
+        };
+
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, kitName);
             statement.setString(2, layout);
             statement.executeUpdate();
@@ -53,7 +79,10 @@ public class DatabaseManager {
     }
 
     private Connection getConnection() throws SQLException {
-        String url = "jdbc:sqlite:" + databaseFile.getAbsolutePath();
-        return DriverManager.getConnection(url);
+        return switch (databaseType) {
+            case SQLITE -> DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+            case MARIADB -> DriverManager.getConnection("jdbc:mariadb://" + host + ":" + port + "/" + databaseName + "?useSSL=false", username, password);
+            case MYSQL -> DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + databaseName + "?useSSL=false&serverTimezone=UTC", username, password);
+        };
     }
 }
